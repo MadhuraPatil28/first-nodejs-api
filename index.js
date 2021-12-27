@@ -1,100 +1,140 @@
-const express = require('express')
-const bodyParser = require('body-parser')
-const mongoose = require('mongoose')
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
-// Import models
-const Post = require('./src/models/post');
+//Defining the application
 
-// Define application
-const app = express()
+const app = express();
 
-// Define DB Connection
-const db = mongoose.connect('mongodb://localhost:27017/first-node-api-db')
+//DEfining the post module
 
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: false }))
+const Post = require("./src/models/post");
 
-app.get('/', function(req, res) {
-  // handle the request for root route
-  res.send({ ping: 'pong' })
-})
 
-// Operations: Create, Read, Update, Delete (CRUD)
-app.post('/posts', function(req, res) {
-  // Get values from request payload
-  const title = req.body.title
-  const author = req.body.author
-  const content = req.body.content
+//Defining the db connection
 
-  // Assign values to Post model
-  var post = new Post();
-  post.title = title
-  post.author = author
-  post.content = content
+//for localhost
+// const db = mongoose.connect('mongodb://localhost:27017/first-node-api').then(
+//     ()=>{console.log("connected")},
+//     err =>{console.log("err",err);}
+//   );
 
-  // Save the post
-  post.save(function(error, savedPost) {
-    if(error) {
-      // send error response
-      res.status(500).send({ error: 'Unable to save Post '})
-    } else {
-      // send success response
-      res.status(200).send(savedPost)
-    }
-  })
-});
+  const db = mongoose.connect('mongodb+srv://afiyaborkar:AfiBrkr%40367@cluster0.mv2es.mongodb.net/first-node-api').then(
+    ()=>{console.log("connected")},
+    err =>{console.log("err",err);}
+  );
 
-// 1. Create API to get details of a single Post
-app.get('/posts/:id', function(req, res) {
-  Post.findById(req.params.id, function(error, post) {
-    if(error) {
-      res.status(422).send({error: 'Unable to fetch post!'})
-    }
-    else {
-      res.status(200).send(post)
-    }
-  })
-})
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
-// Get list of all posts
-app.get('/posts', function(req, res) {
-  Post.find({}, function(error, posts) {
-    if(error) {
-      // send error response
-      res.status(422).send({ error: 'Unable to fetch posts '})
-    } else {
-      // send success response
-      res.status(200).send(posts)
-    }
-  })
-})
 
-// 2. Create API to update a Post
-app.put('/posts/:id', function(req, res) {
-  Post.findByIdAndUpdate(req.params.id, req.body, function (error, post){
-    if(error) {
-      res.status(422).send({error: 'Update unsucessful!'})
-    }
-    else {
-      res.status(200).send(post)
-    }
-  })
+//Default
+app.get('/', function (req, res) {
+    //handle the request for root route
+
+    res.send({
+        ping: "pong"
+    })
+
 })
 
 
-// 3. Create API to delete a Post
-app.delete('/posts/:id', function(req, res) {
-  Post.findByIdAndDelete(req.params.id, function(error, post){
-    if(error){
-      res.status(422).send({error: 'Delete unsuccessful!'})
+//Presentation page
+app.get('/presentation2', function (req, res) {
+    //handle the request for root route
+
+    res.send("<h1>Presentation </h1> <p> This is presentation page created by Afiya Borkar</p>")
+})
+
+//CRUD Operation
+
+//Create
+
+app.post('/posts', function (req, res) {
+    //get the values from the request payload
+    const title = req.body.title;
+    const author = req.body.author;
+    const content = req.body.content;
+
+    //assign the values for the post model
+    var post = new Post();
+    post.title = title;
+    post.author = author;
+    post.content = content;
+
+    post.save((error,savePost)=>{
+        //send the error
+        if(error){
+            res.status(500).send({error:"Unable to save the post"})
+        }
+        //send the response
+        else{
+            res.status(200).send(savePost)
+        }
+    })
+
+    // res.send({title:title,author:author,content:content})
+}
+
+)
+
+//Update
+
+app.patch('/posts/:id',async(req,res)=>{
+    try{
+        const post = await Post.findById(req.params.id);
+        post.hidden = req.body.hidden;
+        const a1 = await post.save();
+        res.json(a1);
     }
-    else{
-      res.status(200).send(post)
+    catch(err){
+        res.send("error"+err);
     }
-  })
+})
+
+//Delete 
+
+app.delete('/posts/:id',async(req,res)=>{
+    try{
+        const post = await Post.findById(req.params.id);
+        post.hidden = req.body.hidden;
+        const a1 = await post.remove();
+        res.json(a1);
+    }
+    catch(err){
+        res.send("error"+err);
+    }
+})
+
+//read
+
+app.get('/posts',(req,res)=>{
+    Post.find({},(error,posts)=>{
+        if(error){
+            res.status(422).send({error:"Unable to fetch the post"});
+        }
+        else{
+            res.status(200).send(posts);
+        }
+    })
+})
+
+//read only one id
+app.get('/:id',async(req,res)=>{
+    try{
+        const b = await Post.findById(req.params.id);
+        res.json(b);
+    
+    } 
+    catch(err){
+        res.send("error"+err);
+    }
 })
 
 
-app.listen(3001, function() {
-  console.log('Server is running at port 3001....')
+//Server
+app.listen(process.env.PORT || 8000,function(){
+    console.log("Server is running on the port number 8000")
 })
